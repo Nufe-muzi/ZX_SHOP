@@ -1,0 +1,7 @@
+# 开发环境配置
+
+# 日志级别调整
+logging:
+  level:
+    com.zxshop: debug
+    com.zxshop.mapper: debug

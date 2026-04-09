@@ -1,0 +1,69 @@
+# 服务器配置
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+# Spring配置
+spring:
+  application:
+    name: zx-shop
+  
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/zx_shop?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+  
+  # Jackson配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    default-property-inclusion: non_null
+
+# MyBatis-Plus配置
+mybatis-plus:
+  # Mapper XML文件位置
+  mapper-locations: classpath*:/mapper/**/*.xml
+  # 实体类扫描路径
+  type-aliases-package: com.zxshop.entity
+  configuration:
+    # 开启驼峰命名转换
+    map-underscore-to-camel-case: true
+    # 打印SQL日志
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      # 主键策略（自增）
+      id-type: auto
+      # 逻辑删除字段
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# Swagger配置
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+# 日志配置
+logging:
+  level:
+    com.zxshop: debug
+    com.zxshop.mapper: debug
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n'
+
+# JWT配置
+jwt:
+  secret: zx-shop-secret-key-2026-nanjing-university-of-finance-and-economics
+  expiration: 86400000  # 24小时（毫秒）
+  header: Authorization
+  prefix: Bearer 
