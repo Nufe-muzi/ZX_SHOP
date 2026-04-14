@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG 知识库管理系统</title>
+    <link rel="stylesheet" href="rag_test.css">
+</head>
+<body>
+    <div class="container">
+        <h1>RAG 知识库管理系统</h1>
+
+        <!-- 顶部导航 -->
+        <div class="top-nav">
+            <div class="nav-tabs">
+                <div class="nav-tab active" data-tab="kb-list">知识库管理</div>
+                <div class="nav-tab" data-tab="kb-detail" id="kbDetailTab" style="display: none;">文档管理</div>
+                <div class="nav-tab" data-tab="search">知识检索</div>
+                <div class="nav-tab" data-tab="config">系统配置</div>
+            </div>
+            <div class="api-config">
+                <label>API 地址:</label>
+                <input type="text" id="apiBase" value="http://localhost:8000">
+                <button class="btn btn-sm" onclick="testConnection()">测试连接</button>
+                <span id="connectionStatus"></span>
+            </div>
+        </div>
+
+        <!-- 知识库列表 -->
+        <div id="kb-list" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <h2>知识库列表</h2>
+                    <button class="btn btn-primary" onclick="showCreateKbModal()">新建知识库</button>
+                </div>
+                <div id="kbList" class="kb-grid"></div>
+            </div>
+        </div>
+
+        <!-- 知识库详情/文档管理 -->
+        <div id="kb-detail" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 id="kbDetailTitle">文档管理</h2>
+                    <div>
+                        <button class="btn btn-secondary" onclick="backToKbList()">返回知识库列表</button>
+                        <button class="btn btn-primary" onclick="showUploadModal()">上传文档</button>
+                    </div>
+                </div>
+
+                <!-- 知识库信息 -->
+                <div id="kbInfo" class="kb-info"></div>
+
+                <!-- 文档列表 -->
+                <div id="documentList" class="document-list"></div>
+            </div>
+        </div>
+
+        <!-- 知识检索 -->
+        <div id="search" class="tab-content">
+            <div class="card">
+                <h2>知识检索</h2>
+
+                <div class="form-group">
+                    <label>选择知识库:</label>
+                    <select id="searchKbSelect">
+                        <option value="">请选择知识库</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>检索查询:</label>
+                    <textarea id="searchQuery" rows="3" placeholder="输入您的问题..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>召回数量 (k):</label>
+                        <input type="number" id="search_k" value="10" min="1" max="50">
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="searchKnowledge()">执行检索</button>
+                    <button class="btn btn-info" onclick="runWorkflow()">运行完整工作流</button>
+                </div>
+
+                <!-- 召回率信息 -->
+                <div id="recallInfo" class="recall-info" style="display: none;">
+                    <strong>召回率统计:</strong>
+                    <span>总文档数: <strong id="recallTotal">0</strong></span>
+                    <span>召回数量: <strong id="recallRetrieved">0</strong></span>
+                    <span>召回率: <strong id="recallRate">0%</strong></span>
+                </div>
+
+                <!-- 检索结果 -->
+                <div id="resultsContainer" class="results-container" style="display: none;">
+                    <div class="results-title">检索结果:</div>
+                    <div id="resultsList"></div>
+                </div>
+
+                <div class="response-box">
+                    <strong>响应结果:</strong>
+                    <pre id="searchResponse">选择知识库后输入查询...</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- 系统配置 -->
+        <div id="config" class="tab-content">
+            <div class="card">
+                <h2>系统配置</h2>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="loadConfig()">加载配置</button>
+                    <button class="btn btn-success" onclick="updateConfig()">更新配置</button>
+                </div>
+
+                <div class="config-grid">
+                    <div class="form-group">
+                        <label>Embedding 模型:</label>
+                        <input type="text" id="embedding_model" value="text-embedding-v2">
+                    </div>
+                    <div class="form-group">
+                        <label>Rerank 模型:</label>
+                        <input type="text" id="rerank_model" value="qwen-plus-2025-07-28">
+                    </div>
+                    <div class="form-group">
+                        <label>Chunk 大小:</label>
+                        <input type="number" id="config_chunk_size" value="800">
+                    </div>
+                    <div class="form-group">
+                        <label>Chunk 重叠:</label>
+                        <input type="number" id="config_chunk_overlap" value="80">
+                    </div>
+                    <div class="form-group">
+                        <label>切分模式:</label>
+                        <select id="chunk_mode">
+                            <option value="recursive">recursive</option>
+                            <option value="character">character</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>检索类型:</label>
+                        <select id="search_type">
+                            <option value="hybrid">hybrid</option>
+                            <option value="semantic">semantic</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>语义权重:</label>
+                        <input type="number" id="weight_semantic" value="0.5" step="0.1" min="0" max="1">
+                    </div>
+                    <div class="form-group">
+                        <label>启用 Rerank:</label>
+                        <select id="use_rerank">
+                            <option value="true">是</option>
+                            <option value="false">否</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>索引存储路径:</label>
+                        <input type="text" id="index_path" value="faiss_index">
+                    </div>
+                    <div class="form-group">
+                        <label>召回数量 (k):</label>
+                        <input type="number" id="retriever_k" value="10" min="1" max="50">
+                    </div>
+                    <div class="form-group">
+                        <label>BM25 召回数量:</label>
+                        <input type="number" id="bm25_k" value="10" min="1" max="50">
+                    </div>
+                </div>
+
+                <div class="response-box">
+                    <strong>响应结果:</strong>
+                    <pre id="configResponse">点击"加载配置"查看当前配置...</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新建知识库弹窗 -->
+    <div id="createKbModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>新建知识库</h3>
+                <span class="close" onclick="closeModal('createKbModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>知识库名称:</label>
+                    <input type="text" id="kbName" placeholder="输入知识库名称">
+                </div>
+                <div class="form-group">
+                    <label>描述:</label>
+                    <textarea id="kbDescription" rows="3" placeholder="输入知识库描述"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Embedding 模型:</label>
+                        <input type="text" id="kbEmbeddingModel" value="text-embedding-v2">
+                    </div>
+                    <div class="form-group">
+                        <label>分段最大长度:</label>
+                        <input type="number" id="kbChunkSize" value="800">
+                    </div>
+                    <div class="form-group">
+                        <label>分段重叠度 (%):</label>
+                        <input type="number" id="kbChunkOverlap" value="10">
+                    </div>
+                    <div class="form-group">
+                        <label>分段标识符:</label>
+                        <select id="kbSeparatorType">
+                            <option value="newline">换行</option>
+                            <option value="paragraph">段落</option>
+                            <option value="sentence">句子</option>
+                            <option value="space">空格</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('createKbModal')">取消</button>
+                <button class="btn btn-primary" onclick="createKb()">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 上传文档弹窗 -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>上传文档</h3>
+                <span class="close" onclick="closeModal('uploadModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>选择文件 (支持多种格式):</label>
+                    <input type="file" id="fileInput"
+                        accept=".txt,.pdf,.docx,.doc,.xlsx,.xls,.csv,.md,.markdown,.html,.htm,.json"
+                        onchange="handleFileSelect()">
+                    <div class="hint">支持: TXT, PDF, Word, Excel, CSV, Markdown, HTML, JSON</div>
+                </div>
+
+                <div id="fileInfo" class="file-info" style="display: none;">
+                    <strong>已选择文件:</strong> <span id="selectedFileName"></span>
+                    <span id="fileTypeBadge" class="badge"></span>
+                </div>
+
+                <!-- 分段设置 -->
+                <div class="section-box">
+                    <h4>分段设置</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>分段标识符:</label>
+                            <select id="separator_type" onchange="toggleCustomSeparator()">
+                                <option value="newline">换行</option>
+                                <option value="paragraph">段落 (双换行)</option>
+                                <option value="sentence">句子 (中英文标点)</option>
+                                <option value="space">空格</option>
+                                <option value="custom">自定义</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>分段最大长度:</label>
+                            <input type="number" id="upload_chunk_size" value="800" min="50" max="4000">
+                        </div>
+                        <div class="form-group">
+                            <label>分段重叠度 (%):</label>
+                            <input type="number" id="upload_chunk_overlap_percent" value="10" min="0" max="50">
+                            <div class="hint">重叠字符数: <span id="overlap_chars">80</span> 字符</div>
+                        </div>
+                    </div>
+
+                    <div id="customSeparatorBox" class="form-group" style="display: none;">
+                        <label>自定义分隔符 (每行一个):</label>
+                        <textarea id="customSeparators" rows="3" placeholder="示例:\n\n\n\n。"></textarea>
+                    </div>
+                </div>
+
+                <!-- 清洗设置 -->
+                <div class="section-box">
+                    <h4>清洗设置</h4>
+                    <div class="clean-options">
+                        <div class="clean-option">
+                            <input type="checkbox" id="cleanCompressSpaces" checked>
+                            <div>
+                                <label for="cleanCompressSpaces">压缩连续空格</label>
+                                <div class="hint">将多个连续空格压缩为单个</div>
+                            </div>
+                        </div>
+                        <div class="clean-option">
+                            <input type="checkbox" id="cleanCompressNewlines" checked>
+                            <div>
+                                <label for="cleanCompressNewlines">压缩连续换行</label>
+                                <div class="hint">将多个连续换行压缩为两个</div>
+                            </div>
+                        </div>
+                        <div class="clean-option">
+                            <input type="checkbox" id="cleanRemoveEmptyLines">
+                            <div>
+                                <label for="cleanRemoveEmptyLines">移除空行</label>
+                                <div class="hint">删除空白行</div>
+                            </div>
+                        </div>
+                        <div class="clean-option">
+                            <input type="checkbox" id="cleanTrimLines" checked>
+                            <div>
+                                <label for="cleanTrimLines">去除行首尾空白</label>
+                                <div class="hint">去除每行首尾的空格和制表符</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="previewDocument()">预览切分</button>
+                    <button class="btn btn-success" onclick="commitDocument()" id="commitBtn" disabled>确认入库</button>
+                </div>
+
+                <!-- 预览列表 -->
+                <div id="previewContainer" class="preview-container" style="display: none;">
+                    <div class="results-title">切分预览:</div>
+                    <div id="previewList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 文档详情弹窗 -->
+    <div id="docDetailModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="docDetailTitle">文档详情</h3>
+                <span class="close" onclick="closeModal('docDetailModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="docInfo" class="doc-info"></div>
+                <div id="chunkList" class="chunk-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="rag_test.js"></script>
+</body>
+</html>

@@ -2,6 +2,7 @@ from typing import TypedDict, List, Annotated, Literal
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import BaseMessage, HumanMessage
 from agent_src.rag.rag_store import RAGManager
+from agent_src.setting.aliyun.config import aliyun_config
 
 # 定义工作流状态
 class GraphState(TypedDict):
@@ -10,7 +11,7 @@ class GraphState(TypedDict):
     documents: List[str]
 
 # 初始化模型和RAG管理器
-llm = ChatOpenAI(model="gpt-4", temperature=0)
+llm = ChatOpenAI(**aliyun_config.get_llm_kwargs(), temperature=0)
 rag_manager = RAGManager()
 
 def retrieve_node(state):
@@ -19,7 +20,7 @@ def retrieve_node(state):
     """
     print("--- 步骤: RETRIEVE ---")
     question = state["question"]
-    retriever = rag_manager.get_retriever()
+    retriever = rag_manager.get_advanced_retriever()
     documents = retriever.invoke(question)
     doc_texts = [d.page_content for d in documents]
     return {"documents": doc_texts}

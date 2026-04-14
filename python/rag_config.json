@@ -1,0 +1,13 @@
+{
+    "embedding_model": "text-embedding-v2",
+    "chunk_size": 500,
+    "chunk_overlap": 50,
+    "chunk_mode": "recursive",
+    "search_type": "hybrid",
+    "weight_semantic": 0.5,
+    "use_rerank": true,
+    "rerank_model": "qwen-plus-2025-07-28",
+    "index_path": "faiss_index",
+    "retriever_k": 10,
+    "bm25_k": 10
+}

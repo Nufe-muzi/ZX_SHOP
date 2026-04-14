@@ -4,15 +4,18 @@ import os
 CONFIG_PATH = "rag_config.json"
 
 DEFAULT_CONFIG = {
-    "embedding_model": "text-embedding-3-small",
+    "embedding_model": "text-embedding-v2",
     "chunk_size": 500,
-    "chunk_overlap": 50,
+    "chunk_overlap": 80,
     "chunk_mode": "recursive",
     "search_type": "hybrid",
-    "weight_semantic": 0.7,
-    "use_rerank": True,
-    "rerank_model": "gpt-4o-mini",
-    "index_path": "faiss_index"
+    "weight_semantic": 0.5,
+    "use_rerank": False,
+    "rerank_model": "qwen-plus-2025-07-28",
+    "index_path": "faiss_index",
+    "retriever_k": 10,
+    "bm25_k": 10,
+    "separator_type": "newline"
 }
 
 def load_config():
